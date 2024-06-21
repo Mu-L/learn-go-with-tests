@@ -155,7 +155,8 @@ func TestSearch(t *testing.T) {
 
 The way to handle this scenario in Go is to return a second argument which is an `Error` type.
 
-`Error`s can be converted to a string with the `.Error()` method, which we do when passing it to the assertion. We are also protecting `assertStrings` with `if` to ensure we don't call `.Error()` on `nil`.
+Notice that as we've seen in the [pointers and error section](./pointers-and-errors.md) here in order to asset the error message
+we first check that the error is not `nil` and then use `.Error()` method to get the string which we can then pass to the assertion.
 
 ## Try and run the test
 
@@ -214,7 +215,9 @@ We can get rid of the magic error in our `Search` function by extracting it into
 ```go
 t.Run("unknown word", func(t *testing.T) {
 	_, got := dictionary.Search("unknown")
-
+	if got == nil {
+		t.Fatal("expected to get an error.")
+	}
 	assertError(t, got, ErrNotFound)
 })
 ```
@@ -288,13 +291,13 @@ So when you pass a map to a function/method, you are indeed copying it, but just
 
 A gotcha with maps is that they can be a `nil` value. A `nil` map behaves like an empty map when reading, but attempts to write to a `nil` map will cause a runtime panic. You can read more about maps [here](https://blog.golang.org/go-maps-in-action).
 
-Therefore, you should never initialize an empty map variable:
+Therefore, you should never initialize a nil map variable:
 
 ```go
 var m map[string]string
 ```
 
-Instead, you can initialize an empty map like we were doing above, or use the `make` keyword to create a map for you:
+Instead, you can initialize an empty map or use the `make` keyword to create a map for you:
 
 ```go
 var dictionary = map[string]string{}
@@ -363,16 +366,9 @@ func TestAdd(t *testing.T) {
 		assertDefinition(t, dictionary, word, definition)
 	})
 }
-
-func assertError(t testing.TB, got, want error) {
-	t.Helper()
-	if got != want {
-		t.Errorf("got %q want %q", got, want)
-	}
-}
 ```
 
-For this test, we modified `Add` to return an error, which we are validating against a new error variable, `ErrWordExists`. We also modified the previous test to check for a `nil` error, as well as the `assertError` function.
+For this test, we modified `Add` to return an error, which we are validating against a new error variable, `ErrWordExists`. We also modified the previous test to check for a `nil` error.
 
 ## Try to run test
 
@@ -599,9 +595,7 @@ func TestDelete(t *testing.T) {
 	dictionary.Delete(word)
 
 	_, err := dictionary.Search(word)
-	if err != ErrNotFound {
-		t.Errorf("Expected %q to be deleted", word)
-	}
+	assertError(t, word, ErrNotFound)
 }
 ```
 
